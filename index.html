@@ -1,18 +1,20 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel WebRTC Spoof</title>
+    <title>LemonSpoofer - WebRTC Call Spoof</title>
 </head>
 <body>
-    <h2>📞 Test Spoof WebRTC</h2>
-    <p><b>Caller ID :</b> +33969353969<br>
-    <b>Vers :</b> +33756836479</p>
-    <button onclick="startCall()">Appeler</button>
+    <h1>📞 LemonSpoofer - Appel Spoof WebRTC</h1>
+    <p><b>Caller ID :</b> +33969353969</p>
+    <p><b>Vers :</b> +33756836479</p>
+    <button onclick="startCall()">✅ Appeler</button>
+    <p id="status"></p>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
     <script>
+        const status = document.getElementById("status");
+
         const userAgent = new SIP.UA({
             uri: 'testspoof123@sip.portsip.com',
             transportOptions: {
@@ -24,16 +26,25 @@
             displayName: '+33969353969'
         });
 
+        userAgent.on('connected', () => status.innerText = "✅ Connecté au serveur SIP.");
+        userAgent.on('disconnected', () => status.innerText = "❌ Déconnecté du serveur SIP.");
+
         function startCall() {
+            status.innerText = "📞 Appel en cours...";
             const target = 'sip:+33756836479@sip.portsip.com';
             const session = userAgent.invite(target, {
-                media: {
+                sessionDescriptionHandlerOptions: {
                     constraints: {
                         audio: true,
                         video: false
                     }
                 }
             });
+
+            session.on('accepted', () => status.innerText = "✅ Appel accepté !");
+            session.on('rejected', () => status.innerText = "❌ Appel rejeté.");
+            session.on('failed', () => status.innerText = "❌ Échec de l'appel.");
+            session.on('bye', () => status.innerText = "📴 Appel terminé.");
         }
     </script>
 </body>
