@@ -1,91 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel Spoof WebRTC</title>
+  <meta charset="UTF-8">
+  <title>LemonSpoofer - Appel Spoof WebRTC</title>
 </head>
 <body>
-    <h2>🎧 LemonSpoofer - Interface Complète</h2>
+  <h2>🎧 LemonSpoofer - Interface Complète</h2>
 
-    <h3>🎙️ Test Micro (Loopback)</h3>
-    <button onclick="testMic()">Tester le micro</button>
-    <p id="mic-status">🎤 En attente...</p>
-    <audio id="playback" controls></audio>
+  <h3>🎙️ Test Micro (Loopback)</h3>
+  <button onclick="testMic()">Tester le micro</button>
+  <p id="mic-status">🎤 En attente...</p>
+  <audio id="playback" controls></audio>
 
-    <hr>
+  <hr>
 
-    <h3>📞 Appel Spoof (SIP.js)</h3>
-    <p>📲 <b>Caller ID :</b> +33969353969<br>
-    🎯 <b>Vers :</b> +33756836479</p>
-    <button id="callBtn">📲 Appeler maintenant</button>
-    <p id="call-status">En attente...</p>
+  <h3>📞 Appel Spoof (SIP.js)</h3>
+  <p>📲 <b>Caller ID :</b> +33969353969<br>
+  🎯 <b>Vers :</b> +33756836479</p>
+  <button id="callBtn">📲 Appeler maintenant</button>
+  <p id="call-status">En attente...</p>
 
-    <!-- ✅ Bonne version SIP.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.11.6/sip.min.js"></script>
+  <!-- ✅ LIB SIP.js : version 0.11.6 -->
+  <script src="https://cdn.jsdelivr.net/npm/sip.js@0.11.6/sip.min.js"></script>
 
-    <script>
-        // Test micro loopback
-        function testMic() {
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    document.getElementById("mic-status").innerText = "✅ Micro actif détecté.";
-                    const playback = document.getElementById("playback");
-                    playback.srcObject = stream;
-                    playback.play();
-                })
-                .catch(err => {
-                    document.getElementById("mic-status").innerText = "❌ Erreur : " + err.message;
-                });
-        }
-
-        // SIP.js classique
-        const userAgent = new SIP.UA({
-            uri: 'testspoof123@sip.portsip.com',
-            wsServers: ['wss://sip.portsip.com:5063'],
-            authorizationUser: 'testspoof123',
-            password: 'x6f89sPoof',
-            displayName: '+33969353969'
+  <script>
+    function testMic() {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          document.getElementById("mic-status").innerText = "✅ Micro actif détecté.";
+          const playback = document.getElementById("playback");
+          playback.srcObject = stream;
+          playback.play();
+        })
+        .catch(err => {
+          document.getElementById("mic-status").innerText = "❌ Erreur : " + err.message;
         });
+    }
 
-        userAgent.on('connected', () => {
-            console.log("✅ Connecté au serveur SIP");
-            document.getElementById("call-status").innerText = "✅ Connecté au serveur SIP";
-        });
+    let userAgent;
 
-        userAgent.on('registered', () => {
-            console.log("📡 Enregistré SIP");
-            document.getElementById("call-status").innerText = "📡 Enregistré sur PortSIP";
-        });
+    window.onload = () => {
+      userAgent = new SIP.UA({
+        uri: 'testspoof123@sip.portsip.com',
+        wsServers: ['wss://sip.portsip.com:5063'],
+        authorizationUser: 'testspoof123',
+        password: 'x6f89sPoof',
+        displayName: '+33969353969'
+      });
 
-        document.getElementById("callBtn").onclick = () => {
-            console.log("🟢 Bouton appel cliqué");
-            document.getElementById("call-status").innerText = "📞 Connexion en cours...";
+      userAgent.on('connected', () => {
+        document.getElementById("call-status").innerText = "✅ Connecté au serveur SIP";
+      });
 
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(stream => {
-                    const session = userAgent.invite('sip:+33756836479@sip.portsip.com', {
-                        media: {
-                            stream: stream
-                        }
-                    });
+      userAgent.on('registered', () => {
+        document.getElementById("call-status").innerText = "📡 Enregistré sur PortSIP";
+      });
 
-                    session.on('accepted', () => {
-                        document.getElementById("call-status").innerText = "✅ Appel accepté !";
-                    });
+      document.getElementById("callBtn").onclick = () => {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            const session = userAgent.invite('sip:+33756836479@sip.portsip.com', {
+              media: { stream: stream }
+            });
 
-                    session.on('bye', () => {
-                        document.getElementById("call-status").innerText = "📴 Appel terminé.";
-                    });
+            session.on('accepted', () => {
+              document.getElementById("call-status").innerText = "✅ Appel accepté !";
+            });
 
-                    session.on('failed', () => {
-                        document.getElementById("call-status").innerText = "❌ Échec de l’appel.";
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    document.getElementById("call-status").innerText = "❌ Erreur micro : " + err.message;
-                });
-        };
-    </script>
+            session.on('bye', () => {
+              document.getElementById("call-status").innerText = "📴 Appel terminé.";
+            });
+
+            session.on('failed', () => {
+              document.getElementById("call-status").innerText = "❌ Échec de l’appel.";
+            });
+          })
+          .catch(err => {
+            document.getElementById("call-status").innerText = "❌ Erreur micro : " + err.message;
+          });
+      };
+    };
+  </script>
 </body>
 </html>
