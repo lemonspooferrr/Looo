@@ -1,89 +1,67 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>LemonSpoofer - Interface Complète</title>
+  <meta charset="UTF-8" />
+  <title>LemonSpoofer - WebRTC Appel</title>
 </head>
 <body>
-  <h2>📞 LemonSpoofer - Interface Complète</h2>
+  <h2>🍋 LemonSpoofer - Interface Complète</h2>
 
-  <!-- Test Micro -->
   <h3>🎙️ Test Micro (Loopback)</h3>
   <button onclick="testerMicro()">Tester le micro</button>
-  <p id="microStatus">⏳ En attente...</p>
-  <audio id="microAudio" controls></audio>
+  <p id="microStatus">🔴 Micro inactif.</p>
+  <audio id="player" controls></audio>
 
-  <!-- Appel SIP -->
+  <hr />
   <h3>📞 Appel Spoof (SIP.js)</h3>
-  <p><b>📇 Caller ID :</b> +33969353969<br>
+  <p><b>📇 Caller ID :</b> +33969353969<br />
      <b>🌐 Vers :</b> +33756836479</p>
-  <button onclick="startCall()">📞 Appeler maintenant</button>
-  <p id="callStatus">⏳ En attente...</p>
+  <button onclick="appeler()">📞 Appeler maintenant</button>
+  <p id="appelStatus">En attente...</p>
 
-  <!-- SIP.js (version valide) -->
   <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
-
   <script>
-    let userAgent;
-
-    // Initialisation après chargement complet
-    window.addEventListener("load", () => {
-      try {
-        userAgent = new SIP.UA({
-          uri: 'testsipxyz@edge.portsip.com',
-          transportOptions: {
-            wsServers: ['wss://edge.portsip.com:8888'],
-            traceSip: true
-          },
-          authorizationUser: 'testsipxyz',
-          password: 't3stP@ssw0rd!',
-          displayName: '+33969353969'
-        });
-        document.getElementById("callStatus").innerText = "✅ UA initialisé.";
-      } catch (err) {
-        document.getElementById("callStatus").innerText = "❌ Erreur init UA : " + err;
-      }
-    });
-
-    // Appel
-    function startCall() {
-      if (!userAgent) {
-        document.getElementById("callStatus").innerText = "❌ UA non initialisé.";
-        return;
-      }
-
-      const target = 'sip:+33756836479@edge.portsip.com';
-      const session = userAgent.invite(target, {
-        media: {
-          constraints: { audio: true, video: false }
-        }
-      });
-
-      session.on('accepted', () => {
-        document.getElementById("callStatus").innerText = "📞 Appel en cours...";
-      });
-
-      session.on('terminated', () => {
-        document.getElementById("callStatus").innerText = "📴 Appel terminé.";
-      });
-
-      session.on('failed', () => {
-        document.getElementById("callStatus").innerText = "❌ Échec de l'appel.";
+    // 1. Test Micro
+    function testerMicro() {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        document.getElementById('microStatus').textContent = "🟢 Micro actif détecté.";
+        document.getElementById('player').srcObject = stream;
+      }).catch((err) => {
+        document.getElementById('microStatus').textContent = "🔴 Erreur micro : " + err;
       });
     }
 
-    // Test micro
-    async function testerMicro() {
-      const audio = document.getElementById("microAudio");
-      const status = document.getElementById("microStatus");
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audio.srcObject = stream;
-        audio.play();
-        status.innerText = "✅ Micro actif détecté.";
-      } catch (e) {
-        status.innerText = "❌ Accès micro refusé : " + e.message;
+    // 2. Init SIP
+    let userAgent;
+
+    window.onload = () => {
+      userAgent = new SIP.UserAgent({
+        uri: 'demo2@portsip.click',
+        transportOptions: {
+          server: 'wss://sip.portsip.click:8089'
+        },
+        authorizationUsername: 'demo2',
+        authorizationPassword: 'demo2',
+        displayName: 'LemonSpoofer'
+      });
+      userAgent.start()
+        .then(() => console.log("✅ UA initialisé"))
+        .catch(err => console.error("UA Start error", err));
+    };
+
+    function appeler() {
+      if (!userAgent || !userAgent.isStarted()) {
+        document.getElementById('appelStatus').textContent = "❌ UA non initialisé.";
+        return;
       }
+
+      const target = 'sip:+33756836479@sip.portsip.click';
+      const inviter = new SIP.Inviter(userAgent, target);
+      inviter.invite().then(() => {
+        document.getElementById('appelStatus').textContent = "📞 Appel lancé...";
+      }).catch((error) => {
+        document.getElementById('appelStatus').textContent = "❌ Échec de l’appel : " + error;
+      });
     }
   </script>
 </body>
