@@ -1,63 +1,42 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel WebRTC Spoof (Amélioré)</title>
+    <meta charset="UTF-8" />
+    <title>🎧 Test Micro + Audio Loopback - LemonSpoofer</title>
 </head>
 <body>
-    <h1>📞 LemonSpoofer - Appel Spoof WebRTC (Micro activé)</h1>
-    <p><b>Caller ID :</b> +33969353969</p>
-    <p><b>Vers :</b> +33756836479</p>
-    <button onclick="startCall()">✅ Appeler</button>
-    <p id="status"></p>
+    <h1>🔊 Test Micro + Écoute immédiate (Loopback)</h1>
+    <button onclick="startTest()">🎧 Activer le micro</button>
+    <p id="status" style="font-weight:bold;"></p>
+    <audio id="audio" autoplay controls style="margin-top:20px;"></audio>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
     <script>
         const status = document.getElementById("status");
+        const audio = document.getElementById("audio");
 
-        const userAgent = new SIP.UA({
-            uri: 'testspoof123@sip.portsip.com',
-            transportOptions: {
-                wsServers: ['wss://sip.portsip.com:5063'],
-                traceSip: true
-            },
-            authorizationUser: 'testspoof123',
-            password: 'x6f89sPoof',
-            displayName: '+33969353969'
-        });
+        function log(msg) {
+            status.innerText = msg;
+            console.log("[DEBUG]", msg);
+        }
 
-        userAgent.on('connected', () => status.innerText = "✅ Connecté au serveur SIP.");
-        userAgent.on('disconnected', () => status.innerText = "❌ Déconnecté du serveur SIP.");
+        async function startTest() {
+            log("🔍 Demande d'accès au micro...");
 
-        function startCall() {
-            status.innerText = "📞 Appel en cours...";
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
-                const target = 'sip:+33756836479@sip.portsip.com';
-                const session = userAgent.invite(target, {
-                    sessionDescriptionHandlerOptions: {
-                        constraints: {
-                            audio: {
-                                echoCancellation: true,
-                                noiseSuppression: true
-                            },
-                            video: false
-                        },
-                        peerConnectionOptions: {
-                            rtcConfiguration: {
-                                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                            }
-                        }
-                    }
-                });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const track = stream.getAudioTracks()[0];
 
-                session.on('accepted', () => status.innerText = "✅ Appel accepté !");
-                session.on('rejected', () => status.innerText = "❌ Appel rejeté.");
-                session.on('failed', () => status.innerText = "❌ Échec de l'appel.");
-                session.on('bye', () => status.innerText = "📴 Appel terminé.");
-            }).catch(error => {
-                status.innerText = "❌ Autorisation micro refusée.";
-                console.error("Micro refusé :", error);
-            });
+                if (track) {
+                    log("✅ Micro actif : " + track.label);
+                    audio.srcObject = stream;
+                } else {
+                    log("⚠️ Aucune piste audio détectée.");
+                }
+
+            } catch (err) {
+                log("❌ Échec : " + err.name + " - " + err.message);
+                console.error(err);
+            }
         }
     </script>
 </body>
