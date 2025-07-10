@@ -1,99 +1,74 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel Spoof + Micro Test</title>
+  <meta charset="UTF-8">
+  <title>LemonSpoofer - Spoof WebRTC</title>
 </head>
 <body>
-    <h1>🎧 LemonSpoofer - Interface Complète</h1>
+  <h1>🎧 LemonSpoofer - Interface Complète</h1>
 
-    <h2>🎙️ Test Micro (Loopback)</h2>
-    <button onclick="testMicro()">🎧 Tester le micro</button>
-    <p id="mic-status" style="color:#444;font-weight:bold;"></p>
-    <audio id="mic-audio" autoplay controls style="margin-top:10px;"></audio>
+  <h2>🎙️ Test Micro (Loopback)</h2>
+  <button onclick="testMicro()">🎧 Tester le micro</button>
+  <p id="mic-status"></p>
+  <audio id="mic-audio" autoplay controls></audio>
 
-    <hr>
+  <hr>
 
-    <h2>📞 Appel Spoof (SIP.js)</h2>
-    <p>📤 <b>Caller ID :</b> +33969353969<br>
-       🎯 <b>Vers :</b> +33756836479</p>
-    <button onclick="startCall()">📲 Appeler maintenant</button>
-    <p id="call-status" style="color:#444;font-weight:bold;"></p>
+  <h2>📞 Appel Spoof (SIP.js)</h2>
+  <p>📤 <b>Caller ID :</b> +33969353969<br>
+     🎯 <b>Vers :</b> +33756836479</p>
+  <button onclick="startCall()">📲 Appeler maintenant</button>
+  <p id="call-status"></p>
 
-    <!-- SIP.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
+  <!-- ✅ SIP.js v0.20 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
 
-    <script>
-        const micStatus = document.getElementById("mic-status");
-        const micAudio = document.getElementById("mic-audio");
-        const callStatus = document.getElementById("call-status");
+  <script>
+    const micStatus = document.getElementById("mic-status");
+    const micAudio = document.getElementById("mic-audio");
+    const callStatus = document.getElementById("call-status");
 
-        // 🎤 Test micro
-        async function testMicro() {
-            micStatus.innerText = "🔍 Test micro en cours...";
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const track = stream.getAudioTracks()[0];
-                if (track) {
-                    micStatus.innerText = "✅ Micro actif : " + track.label;
-                    micAudio.srcObject = stream;
-                } else {
-                    micStatus.innerText = "⚠️ Aucune piste audio détectée.";
-                }
-            } catch (err) {
-                micStatus.innerText = "❌ Micro refusé : " + err.name;
-                console.error(err);
-            }
-        }
+    function testMicro() {
+      micStatus.innerText = "🔍 Test micro en cours...";
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        micStatus.innerText = "✅ Micro actif détecté.";
+        micAudio.srcObject = stream;
+      }).catch(err => {
+        micStatus.innerText = "❌ Accès au micro refusé : " + err.message;
+      });
+    }
 
-        // ✅ SIP.js sans déstructuration
-        const userAgent = new SIP.UA({
-            uri: 'testspoof123@sip.portsip.com',
-            transportOptions: {
-                wsServers: ['wss://sip.portsip.com:5063'],
-                traceSip: true
-            },
-            authorizationUser: 'testspoof123',
-            password: 'x6f89sPoof',
-            displayName: '+33969353969'
+    // 🟢 SIP.js sans UA destructuré
+    const userAgent = new window.SIP.UA({
+      uri: 'testspoof123@sip.portsip.com',
+      transportOptions: {
+        wsServers: ['wss://sip.portsip.com:5063'],
+        traceSip: true
+      },
+      authorizationUser: 'testspoof123',
+      password: 'x6f89sPoof',
+      displayName: '+33969353969'
+    });
+
+    userAgent.on('connected', () => callStatus.innerText = "✅ Connecté au serveur SIP.");
+    userAgent.on('disconnected', () => callStatus.innerText = "❌ Déconnecté du serveur SIP.");
+
+    function startCall() {
+      callStatus.innerText = "📞 Connexion en cours...";
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const session = userAgent.invite('sip:+33756836479@sip.portsip.com', {
+          media: {
+            stream: stream
+          }
         });
 
-        userAgent.on('connected', () => callStatus.innerText = "✅ Connecté au serveur SIP.");
-        userAgent.on('disconnected', () => callStatus.innerText = "❌ Déconnecté du serveur SIP.");
-
-        function startCall() {
-            callStatus.innerText = "📞 Appel en cours...";
-            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-                const target = 'sip:+33756836479@sip.portsip.com';
-                const session = userAgent.invite(target, {
-                    sessionDescriptionHandlerOptions: {
-                        constraints: {
-                            audio: {
-                                echoCancellation: true,
-                                noiseSuppression: true
-                            },
-                            video: false
-                        },
-                        peerConnectionOptions: {
-                            rtcConfiguration: {
-                                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                            }
-                        }
-                    },
-                    media: {
-                        stream: stream
-                    }
-                });
-
-                session.on('accepted', () => callStatus.innerText = "✅ Appel accepté !");
-                session.on('rejected', () => callStatus.innerText = "❌ Appel rejeté.");
-                session.on('failed', () => callStatus.innerText = "❌ Échec de l'appel.");
-                session.on('bye', () => callStatus.innerText = "📴 Appel terminé.");
-            }).catch(err => {
-                callStatus.innerText = "❌ Erreur micro pour appel : " + err.name;
-                console.error(err);
-            });
-        }
-    </script>
+        session.on('accepted', () => callStatus.innerText = "✅ Appel accepté !");
+        session.on('bye', () => callStatus.innerText = "📴 Appel terminé.");
+        session.on('failed', () => callStatus.innerText = "❌ Échec de l’appel.");
+      }).catch(err => {
+        callStatus.innerText = "❌ Erreur micro : " + err.message;
+      });
+    }
+  </script>
 </body>
 </html>
