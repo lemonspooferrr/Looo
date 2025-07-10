@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>LemonSpoofer - Test Appel Spoof</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
+  <!-- Lien correct vers SIP.js (version WebSocket compatible) -->
+  <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
 </head>
 <body>
   <h2>📞 LemonSpoofer - Test Appel Spoof</h2>
@@ -14,34 +15,38 @@
   <p id="status">⏳ UA en attente...</p>
 
   <script>
-    // Configuration SIP
-    const userAgent = new SIP.UA({
-      uri: 'spoofuser@sip.onsip.com',
-      transportOptions: {
-        wsServers: ['wss://sip.onsip.com:7443']
-      },
-      authorizationUser: 'spoofuser',
-      password: 'spoofpass123',
-      hackIpInContact: true
-    });
+    let userAgent;
 
-    userAgent.on('connected', () => {
-      document.getElementById('status').innerText = '✅ Connexion établie';
-    });
+    window.onload = () => {
+      userAgent = new SIP.UA({
+        uri: 'spoofuser@sip.onsip.com',
+        transportOptions: {
+          wsServers: ['wss://sip.onsip.com:7443']
+        },
+        authorizationUser: 'spoofuser',
+        password: 'spoofpass123',
+        hackIpInContact: true
+      });
 
-    userAgent.on('disconnected', () => {
-      document.getElementById('status').innerText = '❌ Déconnecté';
-    });
+      userAgent.on('connected', () => {
+        document.getElementById('status').innerText = '✅ Connexion établie';
+      });
+
+      userAgent.on('disconnected', () => {
+        document.getElementById('status').innerText = '❌ Déconnecté';
+      });
+    };
 
     function startCall() {
+      if (!userAgent) {
+        document.getElementById('status').innerText = '❌ UA non initialisée';
+        return;
+      }
+
       const target = 'sip:+33756836479@sip.onsip.com';
       const session = userAgent.invite(target, {
-        media: {
-          constraints: { audio: true, video: false },
-          render: {
-            remote: document.createElement('audio'),
-            local: document.createElement('audio')
-          }
+        sessionDescriptionHandlerOptions: {
+          constraints: { audio: true, video: false }
         }
       });
 
