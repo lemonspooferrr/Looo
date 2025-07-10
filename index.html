@@ -1,66 +1,53 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <title>LemonSpoofer - WebRTC Appel</title>
+  <title>LemonSpoofer - Test Appel</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
 </head>
 <body>
-  <h2>🍋 LemonSpoofer - Interface Complète</h2>
+  <h2>📞 LemonSpoofer - Test Appel Spoof</h2>
+  <p>Micro : <span id="mic-status">🟠 Non détecté</span></p>
+  <button onclick="startCall()">📲 Appeler maintenant</button>
+  <p id="call-status">En attente…</p>
 
-  <h3>🎙️ Test Micro (Loopback)</h3>
-  <button onclick="testerMicro()">Tester le micro</button>
-  <p id="microStatus">🔴 Micro inactif.</p>
-  <audio id="player" controls></audio>
-
-  <hr />
-  <h3>📞 Appel Spoof (SIP.js)</h3>
-  <p><b>📇 Caller ID :</b> +33969353969<br />
-     <b>🌐 Vers :</b> +33756836479</p>
-  <button onclick="appeler()">📞 Appeler maintenant</button>
-  <p id="appelStatus">En attente...</p>
-
-  <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
   <script>
-    // 1. Test Micro
-    function testerMicro() {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        document.getElementById('microStatus').textContent = "🟢 Micro actif détecté.";
-        document.getElementById('player').srcObject = stream;
-      }).catch((err) => {
-        document.getElementById('microStatus').textContent = "🔴 Erreur micro : " + err;
-      });
-    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      document.getElementById('mic-status').innerText = '🟢 Micro actif détecté';
+    }).catch(err => {
+      document.getElementById('mic-status').innerText = '🔴 Micro refusé';
+    });
 
-    // 2. Init SIP
     let userAgent;
 
-    window.onload = () => {
-      userAgent = new SIP.UserAgent({
-        uri: 'demo2@portsip.click',
+    function startCall() {
+      const target = 'sip:+33756836479@fr1.portsip.com';
+      const uri = 'sip:lemonspoof@fr1.portsip.com';
+
+      const userAgentOptions = {
+        uri: SIP.UserAgent.makeURI(uri),
+        authorizationUsername: 'lemonspoof',
+        authorizationPassword: 'Lemon2025!',
         transportOptions: {
-          server: 'wss://sip.portsip.click:8089'
+          server: 'wss://fr1.portsip.com:5061'
         },
-        authorizationUsername: 'demo2',
-        authorizationPassword: 'demo2',
-        displayName: 'LemonSpoofer'
-      });
-      userAgent.start()
-        .then(() => console.log("✅ UA initialisé"))
-        .catch(err => console.error("UA Start error", err));
-    };
+        displayName: '+33969353969', // Spoofé ici
+        sessionDescriptionHandlerFactoryOptions: {
+          constraints: { audio: true, video: false }
+        }
+      };
 
-    function appeler() {
-      if (!userAgent || !userAgent.isStarted()) {
-        document.getElementById('appelStatus').textContent = "❌ UA non initialisé.";
-        return;
-      }
+      userAgent = new SIP.UserAgent(userAgentOptions);
 
-      const target = 'sip:+33756836479@sip.portsip.click';
-      const inviter = new SIP.Inviter(userAgent, target);
-      inviter.invite().then(() => {
-        document.getElementById('appelStatus').textContent = "📞 Appel lancé...";
-      }).catch((error) => {
-        document.getElementById('appelStatus').textContent = "❌ Échec de l’appel : " + error;
+      userAgent.start().then(() => {
+        const inviter = new SIP.Inviter(userAgent, SIP.UserAgent.makeURI(target));
+        inviter.invite().then(() => {
+          document.getElementById('call-status').innerText = '✅ Appel lancé vers +33756836479…';
+        }).catch(error => {
+          document.getElementById('call-status').innerText = '❌ Erreur appel : ' + error.message;
+        });
+      }).catch(error => {
+        document.getElementById('call-status').innerText = '❌ UA non démarrée : ' + error.message;
       });
     }
   </script>
