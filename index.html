@@ -1,47 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>LemonSpoofer - Appel WebRTC</title>
+  <title>LemonSpoofer - Interface Complète</title>
 </head>
 <body>
   <h2>📞 LemonSpoofer - Interface Complète</h2>
 
-  <!-- 🎙️ Micro Test -->
-  <h3>🎧 Test Micro (Loopback)</h3>
-  <button onclick="testMicro()">Tester le micro</button>
-  <p id="microStatus">🔴 Micro inactif</p>
-  <audio id="loopback" controls></audio>
+  <!-- Test Micro -->
+  <h3>🎙️ Test Micro (Loopback)</h3>
+  <button onclick="testerMicro()">Tester le micro</button>
+  <p id="microStatus">⏳ En attente...</p>
+  <audio id="microAudio" controls></audio>
 
-  <!-- 📞 Appel Spoof -->
+  <!-- Appel SIP -->
   <h3>📞 Appel Spoof (SIP.js)</h3>
   <p><b>📇 Caller ID :</b> +33969353969<br>
      <b>🌐 Vers :</b> +33756836479</p>
   <button onclick="startCall()">📞 Appeler maintenant</button>
-  <p id="callStatus">🕓 En attente...</p>
+  <p id="callStatus">⏳ En attente...</p>
 
-  <!-- ✅ Le bon SIP.js (expose bien "SIP") -->
+  <!-- SIP.js (version valide) -->
   <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
 
   <script>
-    // 🎙️ Test du micro en loopback
-    function testMicro() {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          document.getElementById("microStatus").innerText = "✅ Micro actif détecté.";
-          const audio = document.getElementById("loopback");
-          audio.srcObject = stream;
-          audio.play();
-        })
-        .catch(() => {
-          document.getElementById("microStatus").innerText = "❌ Autorisation micro refusée.";
-        });
-    }
-
-    // 📞 SIP.js Call
     let userAgent;
 
-    window.onload = () => {
+    // Initialisation après chargement complet
+    window.addEventListener("load", () => {
       try {
         userAgent = new SIP.UA({
           uri: 'testsipxyz@edge.portsip.com',
@@ -53,11 +39,13 @@
           password: 't3stP@ssw0rd!',
           displayName: '+33969353969'
         });
-      } catch (e) {
-        document.getElementById("callStatus").innerText = "❌ Erreur init UA : " + e;
+        document.getElementById("callStatus").innerText = "✅ UA initialisé.";
+      } catch (err) {
+        document.getElementById("callStatus").innerText = "❌ Erreur init UA : " + err;
       }
-    };
+    });
 
+    // Appel
     function startCall() {
       if (!userAgent) {
         document.getElementById("callStatus").innerText = "❌ UA non initialisé.";
@@ -71,17 +59,31 @@
         }
       });
 
-      session.on('progress', () => {
+      session.on('accepted', () => {
         document.getElementById("callStatus").innerText = "📞 Appel en cours...";
       });
 
-      session.on('accepted', () => {
-        document.getElementById("callStatus").innerText = "✅ Appel accepté.";
+      session.on('terminated', () => {
+        document.getElementById("callStatus").innerText = "📴 Appel terminé.";
       });
 
       session.on('failed', () => {
-        document.getElementById("callStatus").innerText = "❌ Échec de l’appel.";
+        document.getElementById("callStatus").innerText = "❌ Échec de l'appel.";
       });
+    }
+
+    // Test micro
+    async function testerMicro() {
+      const audio = document.getElementById("microAudio");
+      const status = document.getElementById("microStatus");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audio.srcObject = stream;
+        audio.play();
+        status.innerText = "✅ Micro actif détecté.";
+      } catch (e) {
+        status.innerText = "❌ Accès micro refusé : " + e.message;
+      }
     }
   </script>
 </body>
