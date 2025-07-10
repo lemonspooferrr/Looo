@@ -2,60 +2,64 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>LemonSpoofer - WebRTC Spoof</title>
+  <title>LemonSpoofer - Interface Complète</title>
 </head>
 <body>
-  <h2>🎧 LemonSpoofer - Interface Complète</h2>
+  <h2>🍋 LemonSpoofer - Interface Complète</h2>
 
-  <h3>🎙 Test Micro (Loopback)</h3>
+  <h3>🎙️ Test Micro (Loopback)</h3>
   <button onclick="testMicro()">Tester le micro</button>
-  <p id="microStatus">🎤 Micro inactif.</p>
-  <audio id="micPlayback" controls></audio>
+  <p id="microStatus">⏳ En attente...</p>
+  <audio id="player" controls></audio>
 
   <hr>
 
   <h3>📞 Appel Spoof (SIP.js)</h3>
-  <p>📟 <b>Caller ID :</b> +33969353969<br>
+  <p>📇 <b>Caller ID :</b> +33969353969<br>
      🌐 <b>Vers :</b> +33756836479</p>
-  <button onclick="startCall()">📲 Appeler maintenant</button>
+  <button onclick="appeler()">📲 Appeler maintenant</button>
   <p id="callStatus">En attente...</p>
 
-  <!-- ✅ SIP.js v0.11.6 (stable et compatible avec UA) -->
-  <script src="https://cdn.jsdelivr.net/npm/sip.js@0.11.6/sip.min.js"></script>
+  <!-- ✅ BON script SIP.js -->
+  <script src="https://unpkg.com/sip.js@0.11.6/dist/sip.js"></script>
 
   <script>
     let userAgent;
 
-    window.onload = function () {
-      // ✅ Créer le compte SIP PortSIP
-      userAgent = new SIP.UA({
-        uri: 'testspoof123@sip.portsip.com',
-        transportOptions: {
-          wsServers: ['wss://sip.portsip.com:5063'],
-          traceSip: true
-        },
-        authorizationUser: 'testspoof123',
-        password: 'x6f89sPoof',
-        displayName: '+33969353969'
-      });
-    }
-
+    // Microphone test
     function testMicro() {
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
           document.getElementById("microStatus").innerHTML = "✅ Micro actif détecté.";
-          const audio = document.getElementById("micPlayback");
-          audio.srcObject = stream;
-          audio.play();
+          const player = document.getElementById("player");
+          player.srcObject = stream;
+          player.play();
         })
         .catch(() => {
-          document.getElementById("microStatus").innerHTML = "❌ Accès micro refusé.";
+          document.getElementById("microStatus").innerHTML = "❌ Micro non autorisé.";
         });
     }
 
-    function startCall() {
+    // SIP UA init
+    window.onload = function () {
+      try {
+        userAgent = new SIP.UA({
+          uri: 'testspoof123@sip.portsip.com',
+          transportOptions: {
+            wsServers: ['wss://sip.portsip.com:5063']
+          },
+          authorizationUser: 'testspoof123',
+          password: 'x6f89sPoof',
+          displayName: '+33969353969'
+        });
+      } catch (e) {
+        document.getElementById("callStatus").innerText = "❌ Erreur UA : " + e.message;
+      }
+    };
+
+    function appeler() {
       if (!userAgent) {
-        document.getElementById("callStatus").innerText = "Erreur : UA non initialisé.";
+        document.getElementById("callStatus").innerText = "❌ Erreur : UA non initialisé.";
         return;
       }
 
@@ -65,14 +69,16 @@
         }
       });
 
-      document.getElementById("callStatus").innerText = "📡 Appel lancé...";
-
       session.on('accepted', () => {
-        document.getElementById("callStatus").innerText = "✅ Appel accepté !";
+        document.getElementById("callStatus").innerText = "✅ Appel en cours...";
       });
 
       session.on('bye', () => {
-        document.getElementById("callStatus").innerText = "📴 Appel terminé.";
+        document.getElementById("callStatus").innerText = "🔚 Appel terminé.";
+      });
+
+      session.on('failed', () => {
+        document.getElementById("callStatus").innerText = "❌ Échec de l’appel.";
       });
     }
   </script>
