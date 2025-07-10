@@ -2,10 +2,10 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>LemonSpoofer - WebRTC Call Spoof</title>
+    <title>LemonSpoofer - Appel WebRTC Spoof (Amélioré)</title>
 </head>
 <body>
-    <h1>📞 LemonSpoofer - Appel Spoof WebRTC</h1>
+    <h1>📞 LemonSpoofer - Appel Spoof WebRTC (Micro activé)</h1>
     <p><b>Caller ID :</b> +33969353969</p>
     <p><b>Vers :</b> +33756836479</p>
     <button onclick="startCall()">✅ Appeler</button>
@@ -31,20 +31,33 @@
 
         function startCall() {
             status.innerText = "📞 Appel en cours...";
-            const target = 'sip:+33756836479@sip.portsip.com';
-            const session = userAgent.invite(target, {
-                sessionDescriptionHandlerOptions: {
-                    constraints: {
-                        audio: true,
-                        video: false
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
+                const target = 'sip:+33756836479@sip.portsip.com';
+                const session = userAgent.invite(target, {
+                    sessionDescriptionHandlerOptions: {
+                        constraints: {
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true
+                            },
+                            video: false
+                        },
+                        peerConnectionOptions: {
+                            rtcConfiguration: {
+                                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                            }
+                        }
                     }
-                }
-            });
+                });
 
-            session.on('accepted', () => status.innerText = "✅ Appel accepté !");
-            session.on('rejected', () => status.innerText = "❌ Appel rejeté.");
-            session.on('failed', () => status.innerText = "❌ Échec de l'appel.");
-            session.on('bye', () => status.innerText = "📴 Appel terminé.");
+                session.on('accepted', () => status.innerText = "✅ Appel accepté !");
+                session.on('rejected', () => status.innerText = "❌ Appel rejeté.");
+                session.on('failed', () => status.innerText = "❌ Échec de l'appel.");
+                session.on('bye', () => status.innerText = "📴 Appel terminé.");
+            }).catch(error => {
+                status.innerText = "❌ Autorisation micro refusée.";
+                console.error("Micro refusé :", error);
+            });
         }
     </script>
 </body>
