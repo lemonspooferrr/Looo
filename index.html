@@ -26,7 +26,7 @@
         const micAudio = document.getElementById("mic-audio");
         const callStatus = document.getElementById("call-status");
 
-        // Test micro
+        // 🎤 Test du micro
         async function testMicro() {
             micStatus.innerText = "🔍 Test micro en cours...";
             try {
@@ -44,8 +44,9 @@
             }
         }
 
-        // Configuration SIP.js
-        const userAgent = new SIP.UA({
+        // 📞 SIP.js : Déstructuration correcte (corrige ReferenceError)
+        const { UA } = SIP;
+        const userAgent = new UA({
             uri: 'testspoof123@sip.portsip.com',
             transportOptions: {
                 wsServers: ['wss://sip.portsip.com:5063'],
