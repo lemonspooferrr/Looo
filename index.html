@@ -1,53 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>LemonSpoofer - Test Appel</title>
+  <meta charset="UTF-8">
+  <title>LemonSpoofer - Test Appel Spoof</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
 </head>
 <body>
   <h2>📞 LemonSpoofer - Test Appel Spoof</h2>
-  <p>Micro : <span id="mic-status">🟠 Non détecté</span></p>
+
+  <p>Micro : <span style="color:green;">🟢 Micro actif détecté</span></p>
   <button onclick="startCall()">📲 Appeler maintenant</button>
-  <p id="call-status">En attente…</p>
+
+  <p id="status">⏳ UA en attente...</p>
 
   <script>
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      document.getElementById('mic-status').innerText = '🟢 Micro actif détecté';
-    }).catch(err => {
-      document.getElementById('mic-status').innerText = '🔴 Micro refusé';
+    // Configuration SIP
+    const userAgent = new SIP.UA({
+      uri: 'spoofuser@sip.onsip.com',
+      transportOptions: {
+        wsServers: ['wss://sip.onsip.com:7443']
+      },
+      authorizationUser: 'spoofuser',
+      password: 'spoofpass123',
+      hackIpInContact: true
     });
 
-    let userAgent;
+    userAgent.on('connected', () => {
+      document.getElementById('status').innerText = '✅ Connexion établie';
+    });
+
+    userAgent.on('disconnected', () => {
+      document.getElementById('status').innerText = '❌ Déconnecté';
+    });
 
     function startCall() {
-      const target = 'sip:+33756836479@fr1.portsip.com';
-      const uri = 'sip:lemonspoof@fr1.portsip.com';
-
-      const userAgentOptions = {
-        uri: SIP.UserAgent.makeURI(uri),
-        authorizationUsername: 'lemonspoof',
-        authorizationPassword: 'Lemon2025!',
-        transportOptions: {
-          server: 'wss://fr1.portsip.com:5061'
-        },
-        displayName: '+33969353969', // Spoofé ici
-        sessionDescriptionHandlerFactoryOptions: {
-          constraints: { audio: true, video: false }
+      const target = 'sip:+33756836479@sip.onsip.com';
+      const session = userAgent.invite(target, {
+        media: {
+          constraints: { audio: true, video: false },
+          render: {
+            remote: document.createElement('audio'),
+            local: document.createElement('audio')
+          }
         }
-      };
+      });
 
-      userAgent = new SIP.UserAgent(userAgentOptions);
+      session.on('accepted', () => {
+        document.getElementById('status').innerText = '📞 Appel accepté';
+      });
 
-      userAgent.start().then(() => {
-        const inviter = new SIP.Inviter(userAgent, SIP.UserAgent.makeURI(target));
-        inviter.invite().then(() => {
-          document.getElementById('call-status').innerText = '✅ Appel lancé vers +33756836479…';
-        }).catch(error => {
-          document.getElementById('call-status').innerText = '❌ Erreur appel : ' + error.message;
-        });
-      }).catch(error => {
-        document.getElementById('call-status').innerText = '❌ UA non démarrée : ' + error.message;
+      session.on('bye', () => {
+        document.getElementById('status').innerText = '🛑 Appel terminé';
+      });
+
+      session.on('failed', () => {
+        document.getElementById('status').innerText = '❌ Appel échoué';
       });
     }
   </script>
