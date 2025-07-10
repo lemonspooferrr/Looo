@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel Spoof + Test Micro</title>
+    <title>LemonSpoofer - Appel Spoof + Micro Test</title>
 </head>
 <body>
     <h1>🎧 LemonSpoofer - Interface Complète</h1>
@@ -20,13 +20,15 @@
     <button onclick="startCall()">📲 Appeler maintenant</button>
     <p id="call-status" style="color:#444;font-weight:bold;"></p>
 
+    <!-- SIP.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sip.js/0.20.0/sip.min.js"></script>
+
     <script>
         const micStatus = document.getElementById("mic-status");
         const micAudio = document.getElementById("mic-audio");
         const callStatus = document.getElementById("call-status");
 
-        // 🎤 Test du micro
+        // 🎤 Test micro
         async function testMicro() {
             micStatus.innerText = "🔍 Test micro en cours...";
             try {
@@ -44,9 +46,8 @@
             }
         }
 
-        // 📞 SIP.js : Déstructuration correcte (corrige ReferenceError)
-        const { UA } = SIP;
-        const userAgent = new UA({
+        // ✅ SIP.js sans déstructuration
+        const userAgent = new SIP.UA({
             uri: 'testspoof123@sip.portsip.com',
             transportOptions: {
                 wsServers: ['wss://sip.portsip.com:5063'],
@@ -62,7 +63,7 @@
 
         function startCall() {
             callStatus.innerText = "📞 Appel en cours...";
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
+            navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
                 const target = 'sip:+33756836479@sip.portsip.com';
                 const session = userAgent.invite(target, {
                     sessionDescriptionHandlerOptions: {
@@ -78,6 +79,9 @@
                                 iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
                             }
                         }
+                    },
+                    media: {
+                        stream: stream
                     }
                 });
 
