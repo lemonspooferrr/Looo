@@ -1,81 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>LemonSpoofer - Appel Spoof WebRTC</title>
+  <meta charset="UTF-8">
+  <title>LemonSpoofer - Appel SIP.js</title>
 </head>
 <body>
-    <h2>📞 LemonSpoofer - Interface Complète</h2>
+  <h2>📞 Appel Spoof (SIP.js)</h2>
+  <button onclick="startCall()">Appeler maintenant</button>
+  <p id="callStatus">🕓 En attente...</p>
 
-    <h3>🎤 Test Micro (Loopback)</h3>
-    <button onclick="testMicro()">Tester le micro</button>
-    <p id="microStatus">🔁 En attente...</p>
-    <audio id="microPlayer" controls></audio>
+  <!-- ✅ CORRECT SCRIPT SIP.js -->
+  <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
 
-    <hr>
+  <script>
+    let userAgent;
 
-    <h3>📞 Appel Spoof (SIP.js)</h3>
-    <p>📟 <b>Caller ID :</b> +33969353969<br>
-       🌐 <b>Vers :</b> +33756836479</p>
-    <button onclick="startCall()">📞 Appeler maintenant</button>
-    <p id="callStatus">🕓 En attente...</p>
+    window.onload = () => {
+      try {
+        userAgent = new SIP.UA({
+          uri: 'testsipxyz@edge.portsip.com',
+          transportOptions: {
+            wsServers: ['wss://edge.portsip.com:8888'],
+            traceSip: true
+          },
+          authorizationUser: 'testsipxyz',
+          password: 't3stP@ssw0rd!',
+          displayName: '+33969353969'
+        });
+      } catch (err) {
+        document.getElementById("callStatus").innerText = "❌ UA init failed : " + err;
+      }
+    };
 
-    <script src="https://cdn.jsdelivr.net/npm/sip.js@0.20.0/lib/sip.min.js"></script>
-    <script>
-        let userAgent;
+    function startCall() {
+      if (!userAgent) {
+        document.getElementById("callStatus").innerText = "❌ UA non initialisé.";
+        return;
+      }
 
-        async function testMicro() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const player = document.getElementById("microPlayer");
-                player.srcObject = stream;
-                player.play();
-                document.getElementById("microStatus").innerHTML = "✅ Micro actif détecté.";
-            } catch (e) {
-                document.getElementById("microStatus").innerHTML = "❌ Micro refusé.";
-            }
+      const session = userAgent.invite('sip:+33756836479@edge.portsip.com', {
+        media: {
+          constraints: { audio: true, video: false }
         }
+      });
 
-        window.onload = () => {
-            userAgent = new SIP.UA({
-                uri: 'testsipxyz@edge.portsip.com',
-                transportOptions: {
-                    wsServers: ['wss://edge.portsip.com:8888'],
-                    traceSip: true
-                },
-                authorizationUser: 'testsipxyz',
-                password: 't3stP@ssw0rd!',
-                displayName: '+33969353969'
-            });
-        };
+      session.on('progress', () => {
+        document.getElementById("callStatus").innerText = "📞 Appel en cours...";
+      });
 
-        function startCall() {
-            if (!userAgent) {
-                document.getElementById("callStatus").innerHTML = "❌ UA non initialisé.";
-                return;
-            }
+      session.on('accepted', () => {
+        document.getElementById("callStatus").innerText = "✅ Appel accepté.";
+      });
 
-            const session = userAgent.invite('sip:+33756836479@edge.portsip.com', {
-                media: {
-                    constraints: {
-                        audio: true,
-                        video: false
-                    }
-                }
-            });
-
-            session.on('progress', () => {
-                document.getElementById("callStatus").innerHTML = "📞 Appel en cours...";
-            });
-
-            session.on('accepted', () => {
-                document.getElementById("callStatus").innerHTML = "✅ Appel accepté.";
-            });
-
-            session.on('failed', () => {
-                document.getElementById("callStatus").innerHTML = "❌ Échec de l’appel.";
-            });
-        }
-    </script>
+      session.on('failed', () => {
+        document.getElementById("callStatus").innerText = "❌ Échec de l’appel.";
+      });
+    }
+  </script>
 </body>
 </html>
