@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>LemonSpoofer - Test Appel Spoof</title>
-  <!-- Lien correct vers SIP.js (version WebSocket compatible) -->
+  <!-- Script SIP.js fonctionnel -->
   <script src="https://unpkg.com/sip.js@0.20.0/dist/sip.min.js"></script>
 </head>
 <body>
@@ -17,25 +17,31 @@
   <script>
     let userAgent;
 
-    window.onload = () => {
-      userAgent = new SIP.UA({
-        uri: 'spoofuser@sip.onsip.com',
-        transportOptions: {
-          wsServers: ['wss://sip.onsip.com:7443']
-        },
-        authorizationUser: 'spoofuser',
-        password: 'spoofpass123',
-        hackIpInContact: true
-      });
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        userAgent = new SIP.UA({
+          uri: 'spoofuser@sip.onsip.com',
+          transportOptions: {
+            wsServers: ['wss://sip.onsip.com:7443']
+          },
+          authorizationUser: 'spoofuser',
+          password: 'spoofpass123',
+          hackIpInContact: true
+        });
 
-      userAgent.on('connected', () => {
-        document.getElementById('status').innerText = '✅ Connexion établie';
-      });
+        userAgent.on('connected', () => {
+          document.getElementById('status').innerText = '✅ Connexion établie';
+        });
 
-      userAgent.on('disconnected', () => {
-        document.getElementById('status').innerText = '❌ Déconnecté';
-      });
-    };
+        userAgent.on('disconnected', () => {
+          document.getElementById('status').innerText = '❌ Déconnecté';
+        });
+
+      } catch (err) {
+        document.getElementById('status').innerText = '❌ Erreur de création UA';
+        console.error(err);
+      }
+    });
 
     function startCall() {
       if (!userAgent) {
